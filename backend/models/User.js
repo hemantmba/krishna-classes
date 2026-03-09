@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Index for performance
-userSchema.index({ email: 1 });
 userSchema.index({ className: 1 });
 userSchema.index({ totalScore: -1 });
 
