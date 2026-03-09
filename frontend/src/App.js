@@ -64,9 +64,9 @@ function AppRoutes() {
         <Route path="upload" element={<AdminUpload />} />
         <Route path="reports" element={<AdminReports />} />
       </Route>
-
-      <Route path="*" element={<Navigate to="/" />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="*" element={<Navigate to="/" />} />
+      
     </Routes>
   );
 }
