@@ -1,15 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 
-// ─── REPLACE THESE AFTER ADSENSE APPROVAL ───────────────────────
+// REPLACE THESE AFTER ADSENSE APPROVAL
 const AD_CLIENT = process.env.REACT_APP_ADSENSE_ID || 'ca-pub-XXXXXXXXXXXXXXXX';
 
 const SLOT_IDS = {
-  'top-banner':   'XXXXXXXXXX', // Replace with your real slot ID
-  'sidebar':      'XXXXXXXXXX', // Replace with your real slot ID
-  'result-page':  'XXXXXXXXXX', // Replace with your real slot ID
-  'test-between': 'XXXXXXXXXX', // Replace with your real slot ID
+  'top-banner': 'XXXXXXXXXX',
+  'sidebar': 'XXXXXXXXXX',
+  'result-page': 'XXXXXXXXXX',
+  'test-between': 'XXXXXXXXXX',
 };
-// ────────────────────────────────────────────────────────────────
 
 const AD_SLOTS = {
   'top-banner': {
@@ -55,7 +54,6 @@ export default function AdBanner({ slot = 'top-banner', style = {} }) {
 
   const config = AD_SLOTS[slot] || AD_SLOTS['top-banner'];
 
-  // Don't show ad placeholder if AdSense not configured yet
   if (AD_CLIENT === 'ca-pub-XXXXXXXXXXXXXXXX') {
     return (
       <div style={{
@@ -69,7 +67,7 @@ export default function AdBanner({ slot = 'top-banner', style = {} }) {
         margin: '8px 0',
         ...style
       }}>
-        📢 Ad Space — Configure AdSense to show ads here
+        📢 Ad Space - Configure AdSense to show ads here
       </div>
     );
   }
@@ -89,12 +87,3 @@ export default function AdBanner({ slot = 'top-banner', style = {} }) {
     </div>
   );
 }
-```
-
----
-
-## How to use after AdSense approval:
-
-**Step 1 — Add to `frontend/.env`:**
-```
-REACT_APP_ADSENSE_ID=ca-pub-YOUR_REAL_ID
