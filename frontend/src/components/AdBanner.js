@@ -1,20 +1,37 @@
 import React, { useEffect, useRef } from 'react';
 
+// ─── REPLACE THESE AFTER ADSENSE APPROVAL ───────────────────────
 const AD_CLIENT = process.env.REACT_APP_ADSENSE_ID || 'ca-pub-XXXXXXXXXXXXXXXX';
 
-const AD_SLOTS = {
-  'top-banner': { style: { display: 'block' }, format: 'auto', fullWidthResponsive: true },
-  'sidebar': { style: { display: 'block' }, format: 'auto' },
-  'result-page': { style: { display: 'block' }, format: 'auto', fullWidthResponsive: true },
-  'test-between': { style: { display: 'block', textAlign: 'center' }, layout: 'in-article', format: 'fluid' },
-};
-
-// Map slot names to actual AdSense slot IDs - replace these with your actual IDs
 const SLOT_IDS = {
-  'top-banner': '1234567890',
-  'sidebar': '0987654321',
-  'result-page': '1122334455',
-  'test-between': '5544332211',
+  'top-banner':   'XXXXXXXXXX', // Replace with your real slot ID
+  'sidebar':      'XXXXXXXXXX', // Replace with your real slot ID
+  'result-page':  'XXXXXXXXXX', // Replace with your real slot ID
+  'test-between': 'XXXXXXXXXX', // Replace with your real slot ID
+};
+// ────────────────────────────────────────────────────────────────
+
+const AD_SLOTS = {
+  'top-banner': {
+    style: { display: 'block', minHeight: '90px' },
+    format: 'auto',
+    fullWidthResponsive: true
+  },
+  'sidebar': {
+    style: { display: 'block', minHeight: '250px' },
+    format: 'auto',
+    fullWidthResponsive: false
+  },
+  'result-page': {
+    style: { display: 'block', minHeight: '90px' },
+    format: 'auto',
+    fullWidthResponsive: true
+  },
+  'test-between': {
+    style: { display: 'block', textAlign: 'center', minHeight: '100px' },
+    layout: 'in-article',
+    format: 'fluid'
+  },
 };
 
 export default function AdBanner({ slot = 'top-banner', style = {} }) {
@@ -23,24 +40,48 @@ export default function AdBanner({ slot = 'top-banner', style = {} }) {
 
   useEffect(() => {
     if (loaded.current) return;
-    try {
-      if (window.adsbygoogle && adRef.current) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        loaded.current = true;
+    const timer = setTimeout(() => {
+      try {
+        if (window.adsbygoogle && adRef.current) {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+          loaded.current = true;
+        }
+      } catch (e) {
+        console.error('AdSense error:', e);
       }
-    } catch (e) {}
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const config = AD_SLOTS[slot] || AD_SLOTS['top-banner'];
 
+  // Don't show ad placeholder if AdSense not configured yet
+  if (AD_CLIENT === 'ca-pub-XXXXXXXXXXXXXXXX') {
+    return (
+      <div style={{
+        background: '#fdf3d7',
+        border: '1px dashed #c9971c',
+        borderRadius: '8px',
+        padding: '12px',
+        textAlign: 'center',
+        color: '#888',
+        fontSize: '13px',
+        margin: '8px 0',
+        ...style
+      }}>
+        📢 Ad Space — Configure AdSense to show ads here
+      </div>
+    );
+  }
+
   return (
-    <div className="ad-container ad-inline" style={style}>
+    <div style={{ margin: '8px 0', overflow: 'hidden', ...style }}>
       <ins
         ref={adRef}
         className="adsbygoogle"
         style={{ display: 'block', ...config.style }}
         data-ad-client={AD_CLIENT}
-        data-ad-slot={SLOT_IDS[slot] || '1234567890'}
+        data-ad-slot={SLOT_IDS[slot]}
         data-ad-format={config.format}
         data-full-width-responsive={config.fullWidthResponsive ? 'true' : undefined}
         data-ad-layout={config.layout}
@@ -48,3 +89,12 @@ export default function AdBanner({ slot = 'top-banner', style = {} }) {
     </div>
   );
 }
+```
+
+---
+
+## How to use after AdSense approval:
+
+**Step 1 — Add to `frontend/.env`:**
+```
+REACT_APP_ADSENSE_ID=ca-pub-YOUR_REAL_ID

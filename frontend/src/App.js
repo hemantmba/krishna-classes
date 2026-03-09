@@ -22,6 +22,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ShareResult from './pages/ShareResult';
 import Layout from './components/Layout';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -65,6 +66,7 @@ function AppRoutes() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
     </Routes>
   );
 }
