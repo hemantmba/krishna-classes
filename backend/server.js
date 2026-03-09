@@ -11,9 +11,8 @@ const app = express();
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL,
+    'https://krishna-classes-delta.vercel.app',
     'http://localhost:3000',
-    'https://krishna-classes.vercel.app',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
