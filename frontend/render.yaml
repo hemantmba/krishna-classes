@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: krishna-classes
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false
+      - key: REACT_APP_ADSENSE_ID
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

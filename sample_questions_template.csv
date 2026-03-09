@@ -1,0 +1,11 @@
+question,optionA,optionB,optionC,optionD,answer,explanation,difficulty,isLatex
+What is the capital of India?,Mumbai,New Delhi,Kolkata,Chennai,B,New Delhi is the capital of India,easy,false
+How many planets are in our solar system?,7,8,9,10,B,There are 8 planets in our solar system,easy,false
+"What is the value of $\pi$ (pi) approximately?",3.14,2.71,1.41,1.73,A,Pi is approximately 3.14159...,medium,true
+"Solve: $2x + 5 = 15$","x = 10","x = 5","x = 20","x = 7.5",B,"2x = 15-5 = 10, so x = 5",medium,true
+What is the chemical symbol for water?,H2O,CO2,O2,NaCl,A,Water is composed of 2 hydrogen and 1 oxygen atom,easy,false
+Who wrote the Mahabharata?,Valmiki,Tulsidas,Vyasa,Kalidas,C,Mahabharata was written by Sage Vyasa,medium,false
+"Calculate: $5^2 + 12^2$",144,169,25,196,B,"25 + 144 = 169, which is 13^2",medium,true
+What is photosynthesis?,A process in animals,A process in plants to make food,A chemical reaction,A physical change,B,Plants use sunlight to convert CO2 and water into food,easy,false
+Which gas do plants absorb during photosynthesis?,Oxygen,Nitrogen,Carbon Dioxide,Hydrogen,C,Plants absorb CO2 and release O2 during photosynthesis,easy,false
+"What is the HCF of 12 and 18?",3,6,9,12,B,"Factors of 12: 1,2,3,4,6,12. Factors of 18: 1,2,3,6,9,18. HCF = 6",medium,false
