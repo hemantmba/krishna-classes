@@ -36,10 +36,14 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card" style={{maxWidth:'520px'}}>
         <div className="auth-logo">
-          <div style={{fontSize:'2.5rem', marginBottom:'4px'}}>🎓</div>
-          <div className="auth-title">Create Account</div>
-          <div className="auth-subtitle">Join Krishna Classes Today</div>
-        </div>
+  <img 
+    src="/logo192.png" 
+    alt="Krishna Classes Logo" 
+    style={{width:'100px', height:'100px', borderRadius:'50%', marginBottom:'8px', objectFit:'cover'}}
+  />
+  <div className="auth-title">Krishna Classes</div>
+  <div className="auth-subtitle">Keep You Step Ahead</div>
+</div>
 
         <form onSubmit={handleSubmit}>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px'}}>
