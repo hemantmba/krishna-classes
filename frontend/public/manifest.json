@@ -1,17 +1,30 @@
 {
   "short_name": "Krishna Classes",
   "name": "Krishna Classes - Online Test Platform",
+  "description": "Online test platform for school students",
   "icons": [
-    { "src": "favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" },
-    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
-    { "src": "logo512.png", "type": "image/png", "sizes": "512x512" }
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#b8860b",
+  "orientation": "portrait",
+  "theme_color": "#0d1b4b",
   "background_color": "#0d1b4b",
-  "orientation": "portrait-primary",
-  "description": "Keep You Step Ahead - Online Exam Platform",
-  "categories": ["education"],
-  "lang": "hi"
+  "scope": "/"
 }
