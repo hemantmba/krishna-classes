@@ -27,10 +27,14 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <div style={{fontSize:'3rem', marginBottom:'8px'}}>🎓</div>
-          <div className="auth-title">Krishna Classes</div>
-          <div className="auth-subtitle">Keep You Step Ahead</div>
-        </div>
+  <img 
+    src="/logo192.png" 
+    alt="Krishna Classes Logo" 
+    style={{width:'100px', height:'100px', borderRadius:'50%', marginBottom:'8px', objectFit:'cover'}}
+  />
+  <div className="auth-title">Krishna Classes</div>
+  <div className="auth-subtitle">Keep You Step Ahead</div>
+</div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
