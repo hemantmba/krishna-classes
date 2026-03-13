@@ -7,7 +7,8 @@ const CLASSES = ['1','2','3','4','5','6','7','8','9','10','11','12','BA','BSC','
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
-    name: '', fatherName: '', className: '', email: '', password: '', confirm: '', language: 'hindi'
+    name: '', fatherName: '', className: '', email: '',
+    password: '', confirm: '', language: 'hindi', schoolName: ''
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -17,11 +18,12 @@ export default function RegisterPage() {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error('Passwords do not match');
     if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
+    if (!form.schoolName.trim()) return toast.error('Please enter your school name');
     setLoading(true);
     try {
       const { confirm, ...data } = form;
       await register(data);
-      toast.success('Registration successful! Welcome to Krishna Classes 🎓');
+      toast.success('Registration successful! Welcome to Krishna Classes');
       navigate('/');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
@@ -36,20 +38,17 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card" style={{maxWidth:'520px'}}>
         <div className="auth-logo">
-  <img 
-    src="/logo192.png" 
-    alt="Krishna Classes Logo" 
-    style={{width:'100px', height:'100px', borderRadius:'50%', marginBottom:'8px', objectFit:'cover'}}
-  />
-  <div className="auth-title">Krishna Classes</div>
-  <div className="auth-subtitle">Keep You Step Ahead</div>
-</div>
+          <img src="/logo192.png" alt="Krishna Classes Logo"
+            style={{width:'100px', height:'100px', borderRadius:'50%', marginBottom:'8px', objectFit:'cover'}} />
+          <div className="auth-title">Krishna Classes</div>
+          <div className="auth-subtitle">Keep You Step Ahead</div>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px'}}>
             <div className="form-group">
               <label className="form-label">Full Name *</label>
-              <input className="form-input" placeholder="Your name" required {...f('name')} />
+              <input className="form-input" placeholder="Your full name" required {...f('name')} />
             </div>
             <div className="form-group">
               <label className="form-label">Father's Name *</label>
@@ -68,10 +67,16 @@ export default function RegisterPage() {
             <div className="form-group">
               <label className="form-label">Language *</label>
               <select className="form-input form-select" required {...f('language')}>
-                <option value="hindi">हिंदी (Hindi)</option>
+                <option value="hindi">Hindi</option>
                 <option value="english">English</option>
               </select>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">School Name *</label>
+            <input className="form-input" type="text"
+              placeholder="e.g. Ram Lal Inter College, Agra" required {...f('schoolName')} />
           </div>
 
           <div className="form-group">
@@ -91,13 +96,15 @@ export default function RegisterPage() {
           </div>
 
           <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-            {loading ? '⏳ Creating account...' : '✅ Register'}
+            {loading ? 'Creating account...' : 'Register Now'}
           </button>
         </form>
 
         <div style={{textAlign:'center', marginTop:'16px', fontSize:'0.88rem', color:'var(--text-muted)'}}>
-          Already registered?{' '}
-          <Link to="/login" className="auth-link">Login here</Link>
+          Already registered? <Link to="/login" className="auth-link">Login here</Link>
+        </div>
+        <div style={{textAlign:'center', marginTop:'8px', fontSize:'0.78rem'}}>
+          <Link to="/privacy-policy" className="auth-link">Privacy Policy</Link>
         </div>
       </div>
     </div>

@@ -40,6 +40,7 @@ app.use('/api/tests', require('./routes/tests'));
 app.use('/api/results', require('./routes/results'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
+app.use('/api/manager', require('./routes/manager'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', app: 'Krishna Classes' }));

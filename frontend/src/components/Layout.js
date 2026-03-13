@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AdBanner from './AdBanner';
 
-export default function Layout({ isAdmin }) {
+export default function Layout({ isAdmin, isManager }) {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
@@ -28,7 +28,29 @@ export default function Layout({ isAdmin }) {
     { to: '/admin/reports', icon: '📋', label: 'Reports' },
   ];
 
-  const links = isAdmin ? adminLinks : studentLinks;
+  const managerLinks = [
+    { to: '/manager', icon: '📊', label: 'Rankings Dashboard' },
+  ];
+
+  const getLinks = () => {
+    if (isAdmin) return adminLinks;
+    if (isManager) return managerLinks;
+    return studentLinks;
+  };
+
+  const getTitle = () => {
+    if (isAdmin) return '⚙️ Admin Panel';
+    if (isManager) return '📊 Manager Panel';
+    return '🎓 Krishna Classes';
+  };
+
+  const getSectionTitle = () => {
+    if (isAdmin) return 'Admin Panel';
+    if (isManager) return 'Manager Panel';
+    return 'Navigation';
+  };
+
+  const links = getLinks();
 
   return (
     <div className="main-layout">
@@ -38,26 +60,49 @@ export default function Layout({ isAdmin }) {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${isAdmin ? 'admin-layout' : ''}`}>
         <div className="sidebar-header">
-          <img src="/logo192.png" alt="Krishna Classes" className="sidebar-logo" onError={e => { e.target.style.display='none'; }} />
+          <img
+            src="/logo192.png"
+            alt="Krishna Classes"
+            className="sidebar-logo"
+            onError={e => { e.target.style.display = 'none'; }}
+          />
           <div className="sidebar-brand">Krishna Classes</div>
           <div className="sidebar-tagline">Keep You Step Ahead</div>
         </div>
 
         {user && (
           <div className="sidebar-user-card">
-            <div className="sidebar-user-name">🎓 {user.name}</div>
-            <div className="sidebar-user-class">Class {user.className} • {user.language === 'hindi' ? 'हिंदी' : 'English'}</div>
-            <div className="sidebar-user-score">⭐ Score: {user.totalScore || 0} | Tests: {user.totalTests || 0}</div>
+            <div className="sidebar-user-name">
+              {user.role === 'admin' ? '⚙️' : user.role === 'manager' ? '📊' : '🎓'} {user.name}
+            </div>
+            <div className="sidebar-user-class">
+              {user.role === 'manager'
+                ? '📊 Manager'
+                : user.role === 'admin'
+                ? '⚙️ Admin'
+                : `Class ${user.className} • ${user.language === 'hindi' ? 'हिंदी' : 'English'}`
+              }
+            </div>
+            {user.role === 'student' && (
+              <div className="sidebar-user-score">
+                ⭐ Score: {user.totalScore || 0} | Tests: {user.totalTests || 0}
+              </div>
+            )}
+            {user.schoolName && (
+              <div className="sidebar-user-score">
+                🏫 {user.schoolName}
+              </div>
+            )}
           </div>
         )}
 
         <nav className="sidebar-nav">
-          <div className="nav-section-title">{isAdmin ? 'Admin Panel' : 'Navigation'}</div>
+          <div className="nav-section-title">{getSectionTitle()}</div>
           {links.map(link => (
             <NavLink
               key={link.to}
               to={link.to}
-              end={link.to === '/' || link.to === '/admin'}
+              end={link.to === '/' || link.to === '/admin' || link.to === '/manager'}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
             >
@@ -66,6 +111,7 @@ export default function Layout({ isAdmin }) {
             </NavLink>
           ))}
 
+          {/* Show admin panel link to admin users on student layout */}
           {user?.role === 'admin' && !isAdmin && (
             <>
               <div className="nav-section-title">Admin</div>
@@ -76,36 +122,47 @@ export default function Layout({ isAdmin }) {
           )}
 
           <div className="nav-section-title">Account</div>
-          <div className="nav-item" onClick={handleLogout} style={{cursor:'pointer',color:'#ff6b6b'}}>
+          <div
+            className="nav-item"
+            onClick={handleLogout}
+            style={{ cursor: 'pointer', color: '#ff6b6b' }}
+          >
             <span className="nav-item-icon">🚪</span> Logout
           </div>
         </nav>
 
         {/* Ad in sidebar */}
-        <div style={{padding:'12px'}}>
-          <AdBanner slot="sidebar" style={{minHeight:'60px', fontSize:'0.75rem'}} />
+        <div style={{ padding: '12px' }}>
+          <AdBanner slot="sidebar" style={{ minHeight: '60px', fontSize: '0.75rem' }} />
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="main-content" style={{marginLeft: sidebarOpen ? 0 : undefined}}>
+      <main className="main-content">
         {/* Topbar */}
         <div className="topbar">
-          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-            <span className="topbar-title">
-              {isAdmin ? '⚙️ Admin Panel' : '🎓 Krishna Classes'}
-            </span>
+            <span className="topbar-title">{getTitle()}</span>
           </div>
-          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-            <span style={{fontSize:'0.85rem', color:'var(--text-muted)', display:'none'}}>
-              {user?.name}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {user?.role === 'manager' && (
+              <span style={{
+                background: 'linear-gradient(135deg, var(--gold), #a07010)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 600
+              }}>
+                📊 Manager
+              </span>
+            )}
           </div>
         </div>
 
         {/* Top ad banner */}
-        <div style={{padding:'12px 24px 0'}}>
+        <div style={{ padding: '12px 24px 0' }}>
           <AdBanner slot="top-banner" />
         </div>
 

@@ -8,7 +8,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
   language: { type: String, enum: ['hindi', 'english'], default: 'hindi' },
-  role: { type: String, enum: ['student', 'admin'], default: 'student' },
+  role: { type: String, enum: ['student', 'admin', 'manager'], default: 'student' },
+  schoolName: { type: String, trim: true, default: '' },
   isActive: { type: Boolean, default: true },
   resetToken: String,
   resetTokenExpiry: Date,
@@ -21,6 +22,7 @@ const userSchema = new mongoose.Schema({
 // Index for performance
 userSchema.index({ className: 1 });
 userSchema.index({ totalScore: -1 });
+userSchema.index({ schoolName: 1 });
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
