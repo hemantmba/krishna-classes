@@ -3,6 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
 
+// Shuffle options and track correct answer position
+function shuffleOptions(questions) {
+  return questions.map(q => {
+    const optionsWithIndex = q.options.map((opt, idx) => ({ ...opt, originalIndex: idx }));
+    // Fisher-Yates shuffle
+    for (let i = optionsWithIndex.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [optionsWithIndex[i], optionsWithIndex[j]] = [optionsWithIndex[j], optionsWithIndex[i]];
+    }
+    return { ...q, options: optionsWithIndex };
+  });
+}
+
 export default function TestPage() {
   const { state: config } = useLocation();
   const navigate = useNavigate();
@@ -18,18 +31,26 @@ export default function TestPage() {
   const startTime = useRef(Date.now());
   const timerRef = useRef(null);
 
-  // Load questions
+  // Load questions and shuffle options
   useEffect(() => {
     if (!config) { navigate('/select-test'); return; }
     api.get('/questions/test', {
       params: { className: config.className, chapter: config.chapter, medium: config.language, limit: config.questionCount }
     }).then(res => {
-      if (!res.data.questions.length) { toast.error('No questions found for this selection'); navigate('/select-test'); return; }
-      setQuestions(res.data.questions);
-      const mins = Math.min(res.data.questions.length * 2, 60);
+      if (!res.data.questions.length) {
+        toast.error('No questions found for this selection');
+        navigate('/select-test');
+        return;
+      }
+      // Shuffle options for each question
+      const shuffled = shuffleOptions(res.data.questions);
+      setQuestions(shuffled);
+      const mins = Math.min(shuffled.length * 2, 60);
       setTimeLeft(mins * 60);
-    }).catch(() => { toast.error('Failed to load questions'); navigate('/select-test'); })
-    .finally(() => setLoading(false));
+    }).catch(() => {
+      toast.error('Failed to load questions');
+      navigate('/select-test');
+    }).finally(() => setLoading(false));
   }, []);
 
   // Timer
@@ -74,10 +95,20 @@ export default function TestPage() {
     setSubmitting(true);
     clearInterval(timerRef.current);
     const timeTaken = Math.round((Date.now() - startTime.current) / 1000);
-    const answersArr = questions.map(q => ({
-      questionId: q._id,
-      selectedOption: answers[q._id] ?? -1
-    }));
+
+    // Map shuffled option index back to original index
+    const answersArr = questions.map(q => {
+      const selectedShuffledIdx = answers[q._id] ?? -1;
+      let originalIndex = -1;
+      if (selectedShuffledIdx !== -1) {
+        originalIndex = q.options[selectedShuffledIdx]?.originalIndex ?? -1;
+      }
+      return {
+        questionId: q._id,
+        selectedOption: originalIndex
+      };
+    });
+
     try {
       const res = await api.post('/results/submit', {
         className: config.className, chapter: config.chapter,
@@ -143,21 +174,35 @@ export default function TestPage() {
           <div className="question-card">
             <div className="question-number">Question {current + 1} of {questions.length}</div>
 
-            {/* Question text with LaTeX support */}
+            {/* Question text */}
             <div className="question-text">
-              {q?.questionImage && <img src={`${process.env.REACT_APP_API_URL?.replace('/api','')}/${q.questionImage}`} alt="question" className="question-image" />}
+              {q?.questionImage && (
+                <img
+                  src={`${process.env.REACT_APP_API_URL?.replace('/api','')}/${q.questionImage}`}
+                  alt="question"
+                  className="question-image"
+                />
+              )}
               {q?.questionText}
             </div>
 
-            {/* Options */}
+            {/* Shuffled Options */}
             <div className="options-grid">
               {q?.options.map((opt, idx) => (
-                <div key={idx} className={`option-item ${answers[q._id] === idx ? 'selected' : ''}`}
+                <div
+                  key={idx}
+                  className={`option-item ${answers[q._id] === idx ? 'selected' : ''}`}
                   onClick={() => setAnswers({...answers, [q._id]: idx})}
                 >
                   <div className="option-label">{['A','B','C','D'][idx]}</div>
                   <div className="option-text">
-                    {opt.image && <img src={`${process.env.REACT_APP_API_URL?.replace('/api','')}/${opt.image}`} alt="opt" style={{maxHeight:'60px', display:'block', marginBottom:'4px'}} />}
+                    {opt.image && (
+                      <img
+                        src={`${process.env.REACT_APP_API_URL?.replace('/api','')}/${opt.image}`}
+                        alt="opt"
+                        style={{maxHeight:'60px', display:'block', marginBottom:'4px'}}
+                      />
+                    )}
                     {opt.text}
                   </div>
                 </div>
@@ -173,31 +218,38 @@ export default function TestPage() {
             <button className="btn btn-secondary" onClick={() => setAnswers(a => { const n = {...a}; delete n[q._id]; return n; })}>
               Clear Answer
             </button>
-            <button className="btn btn-primary" style={{marginLeft:'auto'}}
-              onClick={() => current < questions.length - 1 ? setCurrent(c => c+1) : setShowSubmitConfirm(true)}>
+            <button
+              className="btn btn-primary"
+              style={{marginLeft:'auto'}}
+              onClick={() => current < questions.length - 1 ? setCurrent(c => c+1) : setShowSubmitConfirm(true)}
+            >
               {current < questions.length - 1 ? 'Next →' : '✅ Submit'}
             </button>
           </div>
         </div>
 
-        {/* Question palette - desktop */}
-        <div className="card" style={{width:'220px', height:'fit-content', position:'sticky', top:'80px', display:'none', '@media(min-width:900px)': {display:'block'}}}>
+        {/* Question palette */}
+        <div className="card" style={{width:'220px', height:'fit-content', position:'sticky', top:'80px'}}>
           <div style={{padding:'12px 16px', borderBottom:'1px solid var(--border)', fontWeight:'700', fontSize:'0.9rem', color:'var(--navy)'}}>
             📋 Question Map
           </div>
           <div className="q-palette">
             {questions.map((qq, i) => (
-              <button key={i} className={`q-btn ${i === current ? 'current' : answers[qq._id] !== undefined ? 'answered' : ''}`}
+              <button
+                key={i}
+                className={`q-btn ${i === current ? 'current' : answers[qq._id] !== undefined ? 'answered' : ''}`}
                 onClick={() => setCurrent(i)}
               >{i + 1}</button>
             ))}
           </div>
           <div style={{padding:'12px 16px', borderTop:'1px solid var(--border)', fontSize:'0.75rem'}}>
             <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'4px'}}>
-              <div style={{width:'16px',height:'16px',background:'var(--gold)',borderRadius:'4px'}}></div> Answered ({answered})
+              <div style={{width:'16px',height:'16px',background:'var(--gold)',borderRadius:'4px'}}></div>
+              Answered ({answered})
             </div>
             <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
-              <div style={{width:'16px',height:'16px',background:'white',border:'2px solid var(--border)',borderRadius:'4px'}}></div> Not answered ({questions.length - answered})
+              <div style={{width:'16px',height:'16px',background:'white',border:'2px solid var(--border)',borderRadius:'4px'}}></div>
+              Not answered ({questions.length - answered})
             </div>
           </div>
         </div>
@@ -208,14 +260,20 @@ export default function TestPage() {
         <div className="modal-overlay" onClick={() => setShowSubmitConfirm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div style={{fontSize:'2rem', textAlign:'center', marginBottom:'12px'}}>📤</div>
-            <div style={{fontSize:'1.2rem', fontWeight:'700', color:'var(--navy)', textAlign:'center', marginBottom:'8px'}}>Submit Test?</div>
+            <div style={{fontSize:'1.2rem', fontWeight:'700', color:'var(--navy)', textAlign:'center', marginBottom:'8px'}}>
+              Submit Test?
+            </div>
             <div style={{color:'var(--text-muted)', textAlign:'center', marginBottom:'24px'}}>
               You have answered {answered} out of {questions.length} questions.
               {questions.length - answered > 0 && ` ${questions.length - answered} questions are unattempted.`}
             </div>
             <div style={{display:'flex', gap:'12px'}}>
               <button className="btn btn-outline btn-full" onClick={() => setShowSubmitConfirm(false)}>Review</button>
-              <button className="btn btn-primary btn-full" onClick={() => { setShowSubmitConfirm(false); submitTest(); }} disabled={submitting}>
+              <button
+                className="btn btn-primary btn-full"
+                onClick={() => { setShowSubmitConfirm(false); submitTest(); }}
+                disabled={submitting}
+              >
                 {submitting ? 'Submitting...' : '✅ Submit'}
               </button>
             </div>
