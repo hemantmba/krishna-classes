@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
 import AdBanner from '../components/AdBanner';
+import LatexText from '../components/LatexText';
 
 export default function ResultPage() {
   const { id } = useParams();
@@ -162,7 +163,7 @@ export default function ResultPage() {
                             <span style={{fontWeight:'700', color: isCorrect ? 'var(--success)' : isSelected ? 'var(--error)' : 'var(--text-muted)'}}>
                               {['A','B','C','D'][i]}
                             </span>
-                            <span>{opt.text}</span>
+                            <span><LatexText text={opt.text} /></span>
                             {isCorrect && <span style={{marginLeft:'auto', color:'var(--success)', fontWeight:'700'}}>✅</span>}
                             {isSelected && !isCorrect && <span style={{marginLeft:'auto', color:'var(--error)', fontWeight:'700'}}>❌</span>}
                           </div>

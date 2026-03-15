@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
+import LatexText from '../components/LatexText';
 
 // Shuffle options and track correct answer position
 function shuffleOptions(questions) {
@@ -183,7 +184,7 @@ export default function TestPage() {
                   className="question-image"
                 />
               )}
-              {q?.questionText}
+              <LatexText text={q?.questionText} />
             </div>
 
             {/* Shuffled Options */}
@@ -203,7 +204,7 @@ export default function TestPage() {
                         style={{maxHeight:'60px', display:'block', marginBottom:'4px'}}
                       />
                     )}
-                    {opt.text}
+                    <LatexText text={opt.text} />
                   </div>
                 </div>
               ))}
