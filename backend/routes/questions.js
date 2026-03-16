@@ -171,4 +171,30 @@ router.delete('/:id', adminAuth, async (req, res) => {
   }
 });
 
+// Admin: Edit/Update question
+router.put('/:id', adminAuth, async (req, res) => {
+  try {
+    const { questionText, options, correctOption, medium, className,
+            chapter, subject, explanation, difficulty, isLatex } = req.body;
+
+    const updated = await Question.findByIdAndUpdate(
+      req.params.id,
+      {
+        questionText,
+        options: options.map(o => ({ text: o.text, isLatex: false })),
+        correctOption: parseInt(correctOption),
+        medium, className, chapter, subject, explanation,
+        difficulty: difficulty || 'medium',
+        isLatex: isLatex === true || isLatex === 'true'
+      },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ error: 'Question not found' });
+    res.json({ message: 'Question updated successfully', question: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update question' });
+  }
+});
 module.exports = router;
