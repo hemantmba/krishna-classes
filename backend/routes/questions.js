@@ -64,7 +64,6 @@ router.post('/', adminAuth, upload.fields([
     const { questionText, options, correctOption, medium, className, chapter, subject, explanation, difficulty, isLatex } = req.body;
     let parsedOptions = typeof options === 'string' ? JSON.parse(options) : options;
 
-    // Attach images to options
     for (let i = 0; i < 4; i++) {
       if (req.files?.[`option${i}Image`]) {
         parsedOptions[i].image = req.files[`option${i}Image`][0].path;
@@ -101,7 +100,7 @@ router.post('/bulk', adminAuth, upload.single('file'), async (req, res) => {
     if (ext === '.csv') {
       const { parse } = require('csv-parse/sync');
       const content = fs.readFileSync(req.file.path);
-      rows = parse(content, { columns: true, skip_empty_lines: true });
+      rows = parse(content, { columns: true, skip_empty_lines: true, trim: true });
     } else if (ext === '.xlsx' || ext === '.xls') {
       const XLSX = require('xlsx');
       const workbook = XLSX.readFile(req.file.path);
@@ -111,33 +110,119 @@ router.post('/bulk', adminAuth, upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Only CSV or XLSX files allowed.' });
     }
 
-    const questions = rows.map(row => ({
-      questionText: row.question || row.Question,
-      options: [
-        { text: row.optionA || row.option_a || row.A, isLatex: false },
-        { text: row.optionB || row.option_b || row.B, isLatex: false },
-        { text: row.optionC || row.option_c || row.C, isLatex: false },
-        { text: row.optionD || row.option_d || row.D, isLatex: false },
-      ],
-      correctOption: ['A','B','C','D'].indexOf((row.answer || row.Answer || 'A').toString().toUpperCase()),
-      medium: row.medium || medium,
-      className: row.className || row.class || className,
-      chapter: row.chapter || chapter,
-      subject: row.subject || subject,
-      explanation: row.explanation || '',
-      difficulty: row.difficulty || 'medium',
-      isLatex: (row.isLatex || 'false').toString() === 'true',
-      createdBy: req.user._id,
-      isActive: true
-    })).filter(q => q.questionText && q.correctOption >= 0);
+    const questions = rows.map((row, idx) => {
+      // Support multiple column name formats
+      const questionText = (row.question || row.Question || row.questionText || '').toString().trim();
+
+      // Support: optionA, Option A, option_a, A
+      const optA = (row.optionA || row['Option A'] || row.option_a || row.A || '').toString().trim();
+      const optB = (row.optionB || row['Option B'] || row.option_b || row.B || '').toString().trim();
+      const optC = (row.optionC || row['Option C'] || row.option_c || row.C || '').toString().trim();
+      const optD = (row.optionD || row['Option D'] || row.option_d || row.D || '').toString().trim();
+
+      // Support: answer, Answer — must be A/B/C/D
+      const answerRaw = (row.answer || row.Answer || 'A').toString().trim().toUpperCase();
+      const correctOption = ['A', 'B', 'C', 'D'].indexOf(answerRaw);
+
+      // Support: medium, Medium
+      const mediumVal = (row.medium || row.Medium || medium || 'hindi').toString().trim().toLowerCase();
+
+      // Support: className, class, Class
+      const classVal = (row.className || row.class || row.Class || className || '').toString().trim();
+
+      // Support: chapter, Chapter
+      const chapterVal = (row.chapter || row.Chapter || chapter || '').toString().trim();
+
+      // Support: subject, Subject
+      const subjectVal = (row.subject || row.Subject || subject || '').toString().trim();
+
+      // Support: difficulty, Difficulty — normalize to lowercase
+      const difficultyVal = (row.difficulty || row.Difficulty || 'medium').toString().trim().toLowerCase();
+
+      // Support: isLatex, IsLatex, FALSE/TRUE/false/true
+      const isLatexVal = (row.isLatex || row.IsLatex || 'false').toString().trim().toLowerCase() === 'true';
+
+      const explanation = (row.explanation || row.Explanation || '').toString().trim();
+
+      if (!questionText) {
+        console.log(`Row ${idx + 1}: Skipped — empty question text`);
+      }
+      if (correctOption === -1) {
+        console.log(`Row ${idx + 1}: Skipped — invalid answer "${answerRaw}" for question: "${questionText}"`);
+      }
+
+      return {
+        questionText,
+        options: [
+          { text: optA, isLatex: false },
+          { text: optB, isLatex: false },
+          { text: optC, isLatex: false },
+          { text: optD, isLatex: false },
+        ],
+        correctOption,
+        medium: mediumVal,
+        className: classVal,
+        chapter: chapterVal,
+        subject: subjectVal,
+        explanation,
+        difficulty: ['easy', 'medium', 'hard'].includes(difficultyVal) ? difficultyVal : 'medium',
+        isLatex: isLatexVal,
+        createdBy: req.user._id,
+        isActive: true
+      };
+    }).filter(q => {
+      return (
+        q.questionText.length > 0 &&
+        q.correctOption >= 0 &&
+        q.options.every(o => o.text.length > 0)
+      );
+    });
+
+    if (questions.length === 0) {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        error: 'No valid questions found. Check: (1) answer column must be A/B/C/D, (2) all options must be filled, (3) question column must not be empty.'
+      });
+    }
 
     await Question.insertMany(questions, { ordered: false });
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
-    res.json({ message: `${questions.length} questions uploaded successfully.` });
+    res.json({
+      message: `${questions.length} questions uploaded successfully.`,
+      uploaded: questions.length,
+      skipped: rows.length - questions.length
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Bulk upload failed: ' + err.message });
+  }
+});
+
+// Admin: Edit/Update question
+router.put('/:id', adminAuth, async (req, res) => {
+  try {
+    const { questionText, options, correctOption, medium, className,
+      chapter, subject, explanation, difficulty, isLatex } = req.body;
+
+    const updated = await Question.findByIdAndUpdate(
+      req.params.id,
+      {
+        questionText,
+        options: options.map(o => ({ text: o.text, isLatex: false })),
+        correctOption: parseInt(correctOption),
+        medium, className, chapter, subject, explanation,
+        difficulty: difficulty || 'medium',
+        isLatex: isLatex === true || isLatex === 'true'
+      },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ error: 'Question not found' });
+    res.json({ message: 'Question updated successfully', question: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update question' });
   }
 });
 
@@ -171,30 +256,4 @@ router.delete('/:id', adminAuth, async (req, res) => {
   }
 });
 
-// Admin: Edit/Update question
-router.put('/:id', adminAuth, async (req, res) => {
-  try {
-    const { questionText, options, correctOption, medium, className,
-            chapter, subject, explanation, difficulty, isLatex } = req.body;
-
-    const updated = await Question.findByIdAndUpdate(
-      req.params.id,
-      {
-        questionText,
-        options: options.map(o => ({ text: o.text, isLatex: false })),
-        correctOption: parseInt(correctOption),
-        medium, className, chapter, subject, explanation,
-        difficulty: difficulty || 'medium',
-        isLatex: isLatex === true || isLatex === 'true'
-      },
-      { new: true }
-    );
-
-    if (!updated) return res.status(404).json({ error: 'Question not found' });
-    res.json({ message: 'Question updated successfully', question: updated });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update question' });
-  }
-});
 module.exports = router;
