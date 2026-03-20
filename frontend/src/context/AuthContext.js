@@ -11,11 +11,19 @@ export const AuthProvider = ({ children }) => {
     const stored = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     if (stored && token) {
-      setUser(JSON.parse(stored));
-      // Verify token
+      // Set user immediately from localStorage so role is available right away
+      const parsedUser = JSON.parse(stored);
+      setUser(parsedUser);
+
+      // Verify token and refresh user data in background
       api.get('/auth/me').then(res => {
-        setUser(res.data.user);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        const freshUser = res.data.user;
+        // Make sure role is preserved — use stored role as fallback
+        if (!freshUser.role && parsedUser.role) {
+          freshUser.role = parsedUser.role;
+        }
+        setUser(freshUser);
+        localStorage.setItem('user', JSON.stringify(freshUser));
       }).catch(() => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
