@@ -12,22 +12,30 @@ export default function RegisterPage() {
     password: '', confirm: '', language: 'hindi', schoolName: ''
   });
   const [schools, setSchools] = useState([]);
+  const [otherSchool, setOtherSchool] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/schools').then(res => setSchools(res.data.schools)).catch(() => {});
+    api.get('/schools')
+      .then(res => setSchools(res.data.schools || []))
+      .catch(() => {});
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error('Passwords do not match');
     if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
-    if (!form.schoolName.trim()) return toast.error('Please select your school');
+
+    // Handle "other" school option
+    const finalSchoolName = form.schoolName === 'other' ? otherSchool.trim() : form.schoolName;
+    if (!finalSchoolName) return toast.error('Please select or enter your school name');
+
     setLoading(true);
     try {
       const { confirm, ...data } = form;
+      data.schoolName = finalSchoolName;
       await register(data);
       toast.success('Registration successful! Welcome to Krishna Classes 🎓');
       navigate('/');
@@ -38,19 +46,29 @@ export default function RegisterPage() {
     }
   };
 
-  const f = (field) => ({ value: form[field], onChange: e => setForm({ ...form, [field]: e.target.value }) });
+  const f = (field) => ({
+    value: form[field],
+    onChange: e => setForm({ ...form, [field]: e.target.value })
+  });
 
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: '520px' }}>
+
+        {/* Logo */}
         <div className="auth-logo">
-          <img src="/logo192.png" alt="Krishna Classes Logo"
-            style={{ width: '100px', height: '100px', borderRadius: '50%', marginBottom: '8px', objectFit: 'cover' }} />
+          <img
+            src="/logo192.png"
+            alt="Krishna Classes Logo"
+            style={{ width: '100px', height: '100px', borderRadius: '50%', marginBottom: '8px', objectFit: 'cover' }}
+          />
           <div className="auth-title">Krishna Classes</div>
           <div className="auth-subtitle">Keep You Step Ahead</div>
         </div>
 
         <form onSubmit={handleSubmit}>
+
+          {/* Name & Father Name */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label className="form-label">Full Name *</label>
@@ -62,6 +80,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Class & Language */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label className="form-label">Class *</label>
@@ -79,36 +98,73 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* School Dropdown */}
+          {/* School Name */}
           <div className="form-group">
             <label className="form-label">🏫 School Name *</label>
-            {schools.length > 0 ? (
-              <select className="form-input form-select" required {...f('schoolName')}>
-                <option value="">-- Select your school --</option>
-                {schools.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
-              </select>
-            ) : (
-              <input className="form-input" type="text"
-                placeholder="Enter your school name" required {...f('schoolName')} />
+            <select
+              className="form-input form-select"
+              required
+              value={form.schoolName}
+              onChange={e => setForm({ ...form, schoolName: e.target.value })}
+            >
+              <option value="">-- Select your school --</option>
+              {schools.map((s, i) => (
+                <option key={s._id || i} value={s.name}>{s.name}</option>
+              ))}
+              <option value="other">Other (not in list)</option>
+            </select>
+
+            {/* Show text input when "Other" is selected */}
+            {form.schoolName === 'other' && (
+              <input
+                className="form-input"
+                style={{ marginTop: '8px' }}
+                type="text"
+                placeholder="Enter your school name"
+                value={otherSchool}
+                onChange={e => setOtherSchool(e.target.value)}
+                required
+              />
             )}
+
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              If your school is not listed, contact admin to add it.
+              If your school is not listed, select "Other"
             </div>
           </div>
 
+          {/* Email */}
           <div className="form-group">
             <label className="form-label">📧 Email Address *</label>
-            <input className="form-input" type="email" placeholder="your@email.com" required {...f('email')} />
+            <input
+              className="form-input"
+              type="email"
+              placeholder="your@email.com"
+              required
+              {...f('email')}
+            />
           </div>
 
+          {/* Password */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label className="form-label">🔒 Password *</label>
-              <input className="form-input" type="password" placeholder="Min 6 characters" required {...f('password')} />
+              <input
+                className="form-input"
+                type="password"
+                placeholder="Min 6 characters"
+                required
+                {...f('password')}
+              />
             </div>
             <div className="form-group">
               <label className="form-label">🔒 Confirm Password *</label>
-              <input className="form-input" type="password" placeholder="Repeat password" required {...f('confirm')} />
+              <input
+                className="form-input"
+                type="password"
+                placeholder="Repeat password"
+                required
+                {...f('confirm')}
+              />
             </div>
           </div>
 
@@ -123,6 +179,7 @@ export default function RegisterPage() {
         <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.78rem' }}>
           <Link to="/privacy-policy" className="auth-link">Privacy Policy</Link>
         </div>
+
       </div>
     </div>
   );
