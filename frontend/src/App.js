@@ -25,24 +25,36 @@ import Layout from './components/Layout';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import ManagerDashboard from './pages/ManagerDashboard';
 
-// Protected route - blocks unauthenticated users
+const LoadingScreen = () => (
+  <div className="loading-screen"><div className="loading-text">🎓 Krishna Classes</div></div>
+);
+
+// Redirects admin/manager away from student area
+const RoleGuard = () => {
+  const { user } = useAuth();
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+  if (user?.role === 'manager') return <Navigate to="/manager" replace />;
+  return null;
+};
+
+// Protected route
 const ProtectedRoute = ({ children, adminOnly = false, managerOnly = false }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="loading-text">🎓 Krishna Classes</div></div>;
-  if (!user) return <Navigate to="/login" />;
-  if (adminOnly && user.role !== 'admin') return <Navigate to="/" />;
-  if (managerOnly && user.role !== 'manager' && user.role !== 'admin') return <Navigate to="/" />;
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (adminOnly && user.role !== 'admin') return <Navigate to="/" replace />;
+  if (managerOnly && user.role !== 'manager' && user.role !== 'admin') return <Navigate to="/" replace />;
   return children;
 };
 
-// Public route - blocks authenticated users
+// Public route - redirects logged in users to correct dashboard
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="loading-text">🎓 Krishna Classes</div></div>;
+  if (loading) return <LoadingScreen />;
   if (user) {
-    if (user.role === 'admin') return <Navigate to="/admin" />;
-    if (user.role === 'manager') return <Navigate to="/manager" />;
-    return <Navigate to="/" />;
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
+    if (user.role === 'manager') return <Navigate to="/manager" replace />;
+    return <Navigate to="/" replace />;
   }
   return children;
 };
@@ -58,8 +70,13 @@ function AppRoutes() {
       <Route path="/result/share/:token" element={<ShareResult />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
-      {/* Student routes */}
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+      {/* Student routes — RoleGuard redirects admin/manager away */}
+      <Route path="/" element={
+        <ProtectedRoute>
+          <RoleGuard />
+          <Layout />
+        </ProtectedRoute>
+      }>
         <Route index element={<HomePage />} />
         <Route path="select-test" element={<SelectTestPage />} />
         <Route path="test" element={<TestPage />} />
@@ -83,7 +100,7 @@ function AppRoutes() {
       </Route>
 
       {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
