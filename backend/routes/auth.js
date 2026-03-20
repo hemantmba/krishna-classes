@@ -4,12 +4,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
-const axios = require('axios').default || require('https');
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, fatherName, className, email, password, language } = req.body;
+    const { name, fatherName, className, email, password, language, schoolName } = req.body;
     if (!name || !fatherName || !className || !email || !password)
       return res.status(400).json({ error: 'All fields are required.' });
     if (password.length < 6)
@@ -18,11 +17,15 @@ router.post('/register', async (req, res) => {
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ error: 'Email already registered.' });
 
-    const user = new User({ name, fatherName, className, email, password, language: language || 'hindi' });
+    const user = new User({
+      name, fatherName, className, email, password,
+      language: language || 'hindi',
+      schoolName: schoolName || ''
+    });
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-    res.status(201).json({ token, user: user.toSafeObject() });
+    res.status(201).json({ token, user: safeUser(user) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Registration failed. Please try again.' });
@@ -43,13 +46,13 @@ router.post('/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: 'Invalid email or password.' });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, user: user.toSafeObject() });
+    res.json({ token, user: safeUser(user) });
   } catch (err) {
     res.status(500).json({ error: 'Login failed.' });
   }
 });
 
-// Forgot password - sends via Google Apps Script
+// Forgot password
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -58,24 +61,17 @@ router.post('/forgot-password', async (req, res) => {
 
     const token = crypto.randomBytes(32).toString('hex');
     user.resetToken = token;
-    user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
+    user.resetTokenExpiry = Date.now() + 3600000;
     await user.save();
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    // Send via Google Apps Script
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
     if (scriptUrl) {
       const https = require('https');
       const querystring = require('querystring');
-      const params = querystring.stringify({
-        to: email,
-        name: user.name,
-        resetLink,
-        app: 'Krishna Classes'
-      });
-      const urlWithParams = `${scriptUrl}?${params}`;
-      https.get(urlWithParams, () => {}).on('error', () => {});
+      const params = querystring.stringify({ to: email, name: user.name, resetLink, app: 'Krishna Classes' });
+      https.get(`${scriptUrl}?${params}`, () => {}).on('error', () => {});
     }
 
     res.json({ message: 'Password reset link sent to your email.' });
@@ -101,7 +97,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// Change password (authenticated)
+// Change password
 router.post('/change-password', auth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -117,9 +113,34 @@ router.post('/change-password', auth, async (req, res) => {
   }
 });
 
-// Get current user
+// Get current user — always returns fresh data from DB
 router.get('/me', auth, async (req, res) => {
-  res.json({ user: req.user.toSafeObject ? req.user.toSafeObject() : req.user });
+  try {
+    const user = await User.findById(req.user._id).select('-password -resetToken -resetTokenExpiry');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: safeUser(user) });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
 });
+
+// Helper — always includes role, schoolName, all needed fields
+function safeUser(user) {
+  return {
+    _id: user._id,
+    name: user.name,
+    fatherName: user.fatherName,
+    email: user.email,
+    className: user.className,
+    language: user.language,
+    role: user.role,
+    schoolName: user.schoolName || '',
+    totalScore: user.totalScore || 0,
+    totalTests: user.totalTests || 0,
+    isActive: user.isActive,
+    avatar: user.avatar,
+    createdAt: user.createdAt
+  };
+}
 
 module.exports = router;
