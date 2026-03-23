@@ -94,24 +94,16 @@ export default function ResultPage() {
           📤 Share Your Result
         </div>
         <div className="share-buttons">
-          <button className="share-btn share-whatsapp" onClick={() => shareResult('whatsapp')}>
-            📱 WhatsApp
-          </button>
-          <button className="share-btn share-facebook" onClick={() => shareResult('facebook')}>
-            📘 Facebook
-          </button>
-          <button className="share-btn share-twitter" onClick={() => shareResult('twitter')}>
-            🐦 Twitter
-          </button>
-          <button className="share-btn share-copy" onClick={() => shareResult('copy')}>
-            🔗 Copy Link
-          </button>
+          <button className="share-btn share-whatsapp" onClick={() => shareResult('whatsapp')}>📱 WhatsApp</button>
+          <button className="share-btn share-facebook" onClick={() => shareResult('facebook')}>📘 Facebook</button>
+          <button className="share-btn share-twitter" onClick={() => shareResult('twitter')}>🐦 Twitter</button>
+          <button className="share-btn share-copy" onClick={() => shareResult('copy')}>🔗 Copy Link</button>
         </div>
       </div>
 
       <AdBanner slot="result-page" />
 
-      {/* Review mistakes */}
+      {/* Review answers */}
       <div className="card" style={{marginBottom:'20px'}}>
         <div style={{padding:'20px 24px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <div style={{fontWeight:'700', color:'var(--navy)'}}>📚 Review Your Answers</div>
@@ -126,8 +118,7 @@ export default function ResultPage() {
               {['all','correct','wrong','skipped'].map(f => (
                 <button key={f} className={`tab ${filter === f ? 'active' : ''}`}
                   style={{flex:'none', width:'auto', padding:'8px 16px'}}
-                  onClick={() => setFilter(f)}
-                >
+                  onClick={() => setFilter(f)}>
                   {f === 'all' ? `All (${result.totalQuestions})` :
                    f === 'correct' ? `✅ Correct (${result.correct})` :
                    f === 'wrong' ? `❌ Wrong (${result.wrong})` :
@@ -146,9 +137,13 @@ export default function ResultPage() {
                     background: ans.isCorrect ? 'var(--success-light)' : ans.selectedOption === -1 ? 'var(--gold-pale)' : 'var(--error-light)',
                     border: `2px solid ${ans.isCorrect ? 'var(--success)' : ans.selectedOption === -1 ? 'var(--gold)' : 'var(--error)'}`
                   }}>
-                    <div style={{fontWeight:'600', marginBottom:'12px', color:'var(--text)'}}>
-                      Q{idx+1}. {q.questionText}
+
+                    {/* Question text with LaTeX */}
+                    <div style={{fontWeight:'600', marginBottom:'12px', color:'var(--text)', lineHeight:'1.6'}}>
+                      Q{idx+1}. <LatexText text={q.questionText} />
                     </div>
+
+                    {/* Options with LaTeX */}
                     <div style={{display:'flex', flexDirection:'column', gap:'8px', marginBottom:'12px'}}>
                       {q.options?.map((opt, i) => {
                         const isSelected = ans.selectedOption === i;
@@ -160,19 +155,21 @@ export default function ResultPage() {
                             border: `1px solid ${isCorrect ? '#66bb6a' : isSelected ? '#ef9a9a' : '#ddd'}`,
                             display:'flex', gap:'10px', alignItems:'flex-start'
                           }}>
-                            <span style={{fontWeight:'700', color: isCorrect ? 'var(--success)' : isSelected ? 'var(--error)' : 'var(--text-muted)'}}>
+                            <span style={{fontWeight:'700', flexShrink:0, color: isCorrect ? 'var(--success)' : isSelected ? 'var(--error)' : 'var(--text-muted)'}}>
                               {['A','B','C','D'][i]}
                             </span>
-                            <span><LatexText text={opt.text} /></span>
-                            {isCorrect && <span style={{marginLeft:'auto', color:'var(--success)', fontWeight:'700'}}>✅</span>}
-                            {isSelected && !isCorrect && <span style={{marginLeft:'auto', color:'var(--error)', fontWeight:'700'}}>❌</span>}
+                            <span style={{flex:1}}><LatexText text={opt.text} /></span>
+                            {isCorrect && <span style={{marginLeft:'auto', color:'var(--success)', fontWeight:'700', flexShrink:0}}>✅</span>}
+                            {isSelected && !isCorrect && <span style={{marginLeft:'auto', color:'var(--error)', fontWeight:'700', flexShrink:0}}>❌</span>}
                           </div>
                         );
                       })}
                     </div>
+
+                    {/* Explanation with LaTeX */}
                     {q.explanation && (
-                      <div style={{padding:'10px 14px', background:'rgba(26,35,126,0.05)', borderRadius:'8px', fontSize:'0.88rem'}}>
-                        💡 <strong>Explanation:</strong> {q.explanation}
+                      <div style={{padding:'10px 14px', background:'rgba(26,35,126,0.05)', borderRadius:'8px', fontSize:'0.88rem', lineHeight:'1.6'}}>
+                        💡 <strong>Explanation:</strong> <LatexText text={q.explanation} />
                       </div>
                     )}
                   </div>
