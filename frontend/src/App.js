@@ -24,6 +24,7 @@ import ShareResult from './pages/ShareResult';
 import Layout from './components/Layout';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import ManagerDashboard from './pages/ManagerDashboard';
+import 'katex/dist/katex.min.css';
 
 const LoadingScreen = () => (
   <div className="loading-screen"><div className="loading-text">🎓 Krishna Classes</div></div>
