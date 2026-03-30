@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import AdBanner from '../components/AdBanner';
 
 export default function SelectTestPage() {
   const { user } = useAuth();
@@ -25,8 +26,11 @@ export default function SelectTestPage() {
   }, [selected.language]);
 
   const classes = [...new Set(meta.map(m => m._id.className))].sort();
-  const subjects = [...new Set(meta.filter(m => m._id.className === selected.className).map(m => m._id.subject))];
-  const chapters = meta.filter(m => m._id.className === selected.className && (!selected.subject || m._id.subject === selected.subject));
+  const subjects = [...new Set(meta.filter(m => m._id.className === selected.className).map(m => m._id.subject).filter(Boolean))].sort();
+  const chapters = meta.filter(m =>
+    m._id.className === selected.className &&
+    (!selected.subject || m._id.subject === selected.subject)
+  );
 
   const handleStart = () => {
     if (!selected.className || !selected.chapter) return toast.warning('Please select class and chapter');
@@ -40,111 +44,145 @@ export default function SelectTestPage() {
       <div className="page-title">📝 Start Test</div>
       <div className="page-subtitle">Select your test options below</div>
 
-      <div style={{maxWidth:'600px'}}>
+      <div style={{ maxWidth: '600px' }}>
+
         {/* Language */}
-        <div className="card" style={{marginBottom:'20px', padding:'24px'}}>
-          <div style={{fontWeight:'700', color:'var(--navy)', marginBottom:'12px', fontSize:'1rem'}}>
+        <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+          <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px', fontSize: '1rem' }}>
             🌐 Select Medium / माध्यम चुनें
           </div>
-          <div className="lang-toggle" style={{width:'fit-content'}}>
+          <div className="lang-toggle" style={{ width: 'fit-content' }}>
             <button
               className={`lang-btn ${selected.language === 'hindi' ? 'active' : ''}`}
-              onClick={() => setSelected({...selected, language:'hindi', chapter:''})}
+              onClick={() => setSelected({ ...selected, language: 'hindi', subject: '', chapter: '' })}
             >🇮🇳 हिंदी</button>
             <button
               className={`lang-btn ${selected.language === 'english' ? 'active' : ''}`}
-              onClick={() => setSelected({...selected, language:'english', chapter:''})}
+              onClick={() => setSelected({ ...selected, language: 'english', subject: '', chapter: '' })}
             >🇬🇧 English</button>
           </div>
         </div>
 
         {/* Class */}
-        <div className="card" style={{marginBottom:'20px', padding:'24px'}}>
-          <div style={{fontWeight:'700', color:'var(--navy)', marginBottom:'12px'}}>
+        <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+          <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px' }}>
             🏫 Select Class / कक्षा चुनें
           </div>
-          {loading ? <div className="spinner" style={{margin:'0 auto'}} /> : (
-            <div style={{display:'flex', flexWrap:'wrap', gap:'10px'}}>
+          {loading ? <div className="spinner" style={{ margin: '0 auto' }} /> : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
               {classes.map(c => (
                 <button key={c}
                   style={{
-                    padding:'10px 20px', borderRadius:'8px', border:'2px solid',
+                    padding: '10px 20px', borderRadius: '8px', border: '2px solid',
                     borderColor: selected.className === c ? 'var(--gold)' : 'var(--border)',
                     background: selected.className === c ? 'var(--gold)' : 'white',
                     color: selected.className === c ? 'white' : 'var(--text)',
-                    fontWeight:'600', cursor:'pointer', transition:'var(--transition)',
-                    fontFamily:'Poppins, sans-serif'
+                    fontWeight: '600', cursor: 'pointer', transition: 'var(--transition)',
+                    fontFamily: 'Poppins, sans-serif'
                   }}
-                  onClick={() => setSelected({...selected, className:c, subject:'', chapter:''})}
+                  onClick={() => setSelected({ ...selected, className: c, subject: '', chapter: '' })}
                 >Class {c}</button>
               ))}
-              {classes.length === 0 && <div style={{color:'var(--text-muted)'}}>No classes available for this medium</div>}
+              {classes.length === 0 && <div style={{ color: 'var(--text-muted)' }}>No classes available for this medium</div>}
             </div>
           )}
         </div>
 
-        {/* Subject */}
-        {selected.className && subjects.length > 1 && (
-          <div className="card" style={{marginBottom:'20px', padding:'24px'}}>
-            <div style={{fontWeight:'700', color:'var(--navy)', marginBottom:'12px'}}>📚 Select Subject</div>
-            <div style={{display:'flex', flexWrap:'wrap', gap:'10px'}}>
-              {subjects.map(s => (
-                <button key={s} onClick={() => setSelected({...selected, subject:s, chapter:''})}
-                  style={{
-                    padding:'10px 20px', borderRadius:'8px', border:'2px solid',
-                    borderColor: selected.subject === s ? 'var(--deep-blue)' : 'var(--border)',
-                    background: selected.subject === s ? 'var(--deep-blue)' : 'white',
-                    color: selected.subject === s ? 'white' : 'var(--text)',
-                    fontWeight:'600', cursor:'pointer', fontFamily:'Poppins, sans-serif'
-                  }}
-                >{s}</button>
-              ))}
+        {/* Subject — always show when class is selected */}
+        {selected.className && (
+          <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+            <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px' }}>
+              📚 Select Subject / विषय चुनें
             </div>
+            {subjects.length === 0 ? (
+              <div style={{ color: 'var(--text-muted)' }}>No subjects found for this class</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <button
+                  onClick={() => setSelected({ ...selected, subject: '', chapter: '' })}
+                  style={{
+                    padding: '10px 20px', borderRadius: '8px', border: '2px solid',
+                    borderColor: selected.subject === '' ? 'var(--deep-blue)' : 'var(--border)',
+                    background: selected.subject === '' ? 'var(--deep-blue)' : 'white',
+                    color: selected.subject === '' ? 'white' : 'var(--text)',
+                    fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
+                  }}
+                >📋 All Subjects</button>
+                {subjects.map(s => (
+                  <button key={s}
+                    onClick={() => setSelected({ ...selected, subject: s, chapter: '' })}
+                    style={{
+                      padding: '10px 20px', borderRadius: '8px', border: '2px solid',
+                      borderColor: selected.subject === s ? 'var(--deep-blue)' : 'var(--border)',
+                      background: selected.subject === s ? 'var(--deep-blue)' : 'white',
+                      color: selected.subject === s ? 'white' : 'var(--text)',
+                      fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
+                    }}
+                  >{s}</button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
+        {/* Ad between subject and chapter */}
+        {selected.className && <AdBanner slot="select-test-mid" />}
+
         {/* Chapter */}
         {selected.className && (
-          <div className="card" style={{marginBottom:'20px', padding:'24px'}}>
-            <div style={{fontWeight:'700', color:'var(--navy)', marginBottom:'12px'}}>📖 Select Chapter</div>
-            <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+          <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+            <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px' }}>
+              📖 Select Chapter / अध्याय चुनें
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {chapters.map(c => (
                 <div key={c._id.chapter}
-                  onClick={() => setSelected({...selected, chapter:c._id.chapter})}
+                  onClick={() => setSelected({ ...selected, chapter: c._id.chapter })}
                   style={{
-                    padding:'14px 16px', borderRadius:'8px', border:'2px solid',
+                    padding: '14px 16px', borderRadius: '8px', border: '2px solid',
                     borderColor: selected.chapter === c._id.chapter ? 'var(--gold)' : 'var(--border)',
                     background: selected.chapter === c._id.chapter ? 'var(--gold-pale)' : 'white',
-                    cursor:'pointer', transition:'var(--transition)',
-                    display:'flex', justifyContent:'space-between', alignItems:'center'
+                    cursor: 'pointer', transition: 'var(--transition)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                   }}
                 >
-                  <span style={{fontWeight:'500'}}>{c._id.chapter}</span>
+                  <div>
+                    <span style={{ fontWeight: '500' }}>{c._id.chapter}</span>
+                    {c._id.subject && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                        ({c._id.subject})
+                      </span>
+                    )}
+                  </div>
                   <span style={{
-                    background: 'var(--navy)', color:'white', padding:'2px 10px',
-                    borderRadius:'12px', fontSize:'0.75rem', fontWeight:'600'
+                    background: 'var(--navy)', color: 'white', padding: '2px 10px',
+                    borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600', flexShrink: 0
                   }}>{c.count} Qs</span>
                 </div>
               ))}
-              {chapters.length === 0 && <div style={{color:'var(--text-muted)'}}>Select a class to see chapters</div>}
+              {chapters.length === 0 && (
+                <div style={{ color: 'var(--text-muted)' }}>No chapters found for selected filters</div>
+              )}
             </div>
           </div>
         )}
 
         {/* Question count */}
         {selected.chapter && (
-          <div className="card" style={{marginBottom:'20px', padding:'24px'}}>
-            <div style={{fontWeight:'700', color:'var(--navy)', marginBottom:'12px'}}>🔢 Number of Questions</div>
-            <div style={{display:'flex', gap:'10px', flexWrap:'wrap'}}>
+          <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
+            <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px' }}>
+              🔢 Number of Questions
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {[10, 20, 30, 50].map(n => (
                 <button key={n}
-                  onClick={() => setSelected({...selected, questionCount:n})}
+                  onClick={() => setSelected({ ...selected, questionCount: n })}
                   style={{
-                    padding:'10px 24px', borderRadius:'8px', border:'2px solid',
+                    padding: '10px 24px', borderRadius: '8px', border: '2px solid',
                     borderColor: selected.questionCount === n ? 'var(--gold)' : 'var(--border)',
                     background: selected.questionCount === n ? 'var(--gold)' : 'white',
                     color: selected.questionCount === n ? 'white' : 'var(--text)',
-                    fontWeight:'600', cursor:'pointer', fontFamily:'Poppins, sans-serif'
+                    fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
                   }}
                 >{n}</button>
               ))}
@@ -153,10 +191,11 @@ export default function SelectTestPage() {
         )}
 
         {selected.chapter && (
-          <button className="btn btn-primary btn-full" style={{fontSize:'1.1rem', padding:'16px'}} onClick={handleStart}>
+          <button className="btn btn-primary btn-full" style={{ fontSize: '1.1rem', padding: '16px' }} onClick={handleStart}>
             🚀 Start Test Now
           </button>
         )}
+
       </div>
     </div>
   );
