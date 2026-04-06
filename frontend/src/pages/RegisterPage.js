@@ -9,7 +9,8 @@ const CLASSES = ['1','2','3','4','5','6','7','8','9','10','11','12','BA','BSC','
 export default function RegisterPage() {
   const [form, setForm] = useState({
     name: '', fatherName: '', className: '', email: '',
-    password: '', confirm: '', language: 'hindi', schoolName: ''
+    password: '', confirm: '', language: 'hindi',
+    schoolName: '', mobileNumber: ''
   });
   const [schools, setSchools] = useState([]);
   const [otherSchool, setOtherSchool] = useState('');
@@ -18,9 +19,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/schools')
-      .then(res => setSchools(res.data.schools || []))
-      .catch(() => {});
+    api.get('/schools').then(res => setSchools(res.data.schools || [])).catch(() => {});
   }, []);
 
   const handleSubmit = async (e) => {
@@ -28,7 +27,11 @@ export default function RegisterPage() {
     if (form.password !== form.confirm) return toast.error('Passwords do not match');
     if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
 
-    // Handle "other" school option
+    // Validate mobile number
+    if (!form.mobileNumber.trim()) return toast.error('Please enter your mobile number');
+    if (!/^[6-9]\d{9}$/.test(form.mobileNumber.trim()))
+      return toast.error('Please enter a valid 10-digit Indian mobile number');
+
     const finalSchoolName = form.schoolName === 'other' ? otherSchool.trim() : form.schoolName;
     if (!finalSchoolName) return toast.error('Please select or enter your school name');
 
@@ -54,20 +57,14 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: '520px' }}>
-
-        {/* Logo */}
         <div className="auth-logo">
-          <img
-            src="/logo192.png"
-            alt="Krishna Classes Logo"
-            style={{ width: '100px', height: '100px', borderRadius: '50%', marginBottom: '8px', objectFit: 'cover' }}
-          />
+          <img src="/logo192.png" alt="Krishna Classes Logo"
+            style={{ width: '100px', height: '100px', borderRadius: '50%', marginBottom: '8px', objectFit: 'cover' }} />
           <div className="auth-title">Krishna Classes</div>
           <div className="auth-subtitle">Keep You Step Ahead</div>
         </div>
 
         <form onSubmit={handleSubmit}>
-
           {/* Name & Father Name */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
@@ -98,6 +95,30 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Mobile Number */}
+          <div className="form-group">
+            <label className="form-label">📱 Mobile Number *</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                padding: '10px 12px', background: 'var(--bg)', border: '2px solid var(--border)',
+                borderRadius: '8px', fontWeight: 600, color: 'var(--navy)', fontSize: '14px', flexShrink: 0
+              }}>+91</span>
+              <input
+                className="form-input"
+                type="tel"
+                placeholder="10-digit mobile number"
+                maxLength={10}
+                pattern="[6-9][0-9]{9}"
+                required
+                {...f('mobileNumber')}
+                style={{ flex: 1 }}
+              />
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Enter 10-digit mobile number starting with 6, 7, 8 or 9
+            </div>
+          </div>
+
           {/* School Name */}
           <div className="form-group">
             <label className="form-label">🏫 School Name *</label>
@@ -113,8 +134,6 @@ export default function RegisterPage() {
               ))}
               <option value="other">Other (not in list)</option>
             </select>
-
-            {/* Show text input when "Other" is selected */}
             {form.schoolName === 'other' && (
               <input
                 className="form-input"
@@ -126,7 +145,6 @@ export default function RegisterPage() {
                 required
               />
             )}
-
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
               If your school is not listed, select "Other"
             </div>
@@ -135,36 +153,18 @@ export default function RegisterPage() {
           {/* Email */}
           <div className="form-group">
             <label className="form-label">📧 Email Address *</label>
-            <input
-              className="form-input"
-              type="email"
-              placeholder="your@email.com"
-              required
-              {...f('email')}
-            />
+            <input className="form-input" type="email" placeholder="your@email.com" required {...f('email')} />
           </div>
 
           {/* Password */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label className="form-label">🔒 Password *</label>
-              <input
-                className="form-input"
-                type="password"
-                placeholder="Min 6 characters"
-                required
-                {...f('password')}
-              />
+              <input className="form-input" type="password" placeholder="Min 6 characters" required {...f('password')} />
             </div>
             <div className="form-group">
               <label className="form-label">🔒 Confirm Password *</label>
-              <input
-                className="form-input"
-                type="password"
-                placeholder="Repeat password"
-                required
-                {...f('confirm')}
-              />
+              <input className="form-input" type="password" placeholder="Repeat password" required {...f('confirm')} />
             </div>
           </div>
 
@@ -179,7 +179,6 @@ export default function RegisterPage() {
         <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.78rem' }}>
           <Link to="/privacy-policy" className="auth-link">Privacy Policy</Link>
         </div>
-
       </div>
     </div>
   );

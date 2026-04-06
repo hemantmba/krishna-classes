@@ -15,7 +15,7 @@ router.get('/stats', adminAuth, async (req, res) => {
       Result.countDocuments({})
     ]);
     const recentUsers = await User.find({ role: 'student' })
-      .select('name className schoolName createdAt').sort({ createdAt: -1 }).limit(10);
+      .select('name className schoolName mobileNumber createdAt').sort({ createdAt: -1 }).limit(10);
     res.json({ totalUsers, totalQuestions, totalTests, recentUsers });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch stats.' });
@@ -32,7 +32,8 @@ router.get('/users', adminAuth, async (req, res) => {
     if (isActive !== undefined) query.isActive = isActive === 'true';
     if (search) query.$or = [
       { name: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } }
+      { email: { $regex: search, $options: 'i' } },
+      { mobileNumber: { $regex: search, $options: 'i' } }
     ];
 
     const total = await User.countDocuments(query);
@@ -60,7 +61,7 @@ router.patch('/users/:id/toggle', adminAuth, async (req, res) => {
   }
 });
 
-// Promote/change user role
+// Change user role
 router.patch('/users/:id/role', adminAuth, async (req, res) => {
   try {
     const { role } = req.body;
@@ -83,25 +84,7 @@ router.delete('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ─── REPORTS ────────────────────────────────────────────────────────────────
-
-// Helper: style header row bold + bg color
-function styleSheet(ws, colCount) {
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let C = range.s.c; C <= colCount - 1; C++) {
-    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-    if (cell) {
-      cell.s = {
-        font: { bold: true, color: { rgb: 'FFFFFF' } },
-        fill: { fgColor: { rgb: '0D1B4B' } },
-        alignment: { horizontal: 'center' }
-      };
-    }
-  }
-  return ws;
-}
-
-// Download users report (XLSX)
+// Download users report (XLSX) — includes mobile number
 router.get('/reports/users', adminAuth, async (req, res) => {
   try {
     const { className, isActive, schoolName } = req.query;
@@ -120,8 +103,9 @@ router.get('/reports/users', adminAuth, async (req, res) => {
       'Father Name': u.fatherName || '—',
       'Class': u.className,
       'School Name': u.schoolName || '—',
+      'Mobile Number': u.mobileNumber || '—',
       'Email': u.email,
-      'Language': u.language === 'hindi' ? 'हिंदी' : 'English',
+      'Language': u.language === 'hindi' ? 'Hindi' : 'English',
       'Total Score': u.totalScore || 0,
       'Total Tests': u.totalTests || 0,
       'Avg Score': u.totalTests > 0 ? (u.totalScore / u.totalTests).toFixed(1) : 0,
@@ -130,11 +114,10 @@ router.get('/reports/users', adminAuth, async (req, res) => {
       'Joined Date': u.createdAt?.toISOString().split('T')[0]
     }));
 
-    // Set column widths
     const colWidths = [
       { wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 8 }, { wch: 30 },
-      { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-      { wch: 10 }, { wch: 10 }, { wch: 14 }
+      { wch: 14 }, { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 12 },
+      { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 14 }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -152,14 +135,13 @@ router.get('/reports/users', adminAuth, async (req, res) => {
   }
 });
 
-// Download rank report (XLSX)
+// Download rank report (XLSX) — includes mobile number
 router.get('/reports/ranks', adminAuth, async (req, res) => {
   try {
     const { className, chapter, schoolName } = req.query;
     let data = [];
 
     if (chapter) {
-      // Chapter-wise ranking
       const matchQuery = { chapter };
       if (className) matchQuery.className = className;
 
@@ -183,7 +165,6 @@ router.get('/reports/ranks', adminAuth, async (req, res) => {
         { $unwind: '$user' }
       ]);
 
-      // Filter by school after lookup
       const filtered = schoolName
         ? results.filter(r => r.user.schoolName === schoolName)
         : results;
@@ -194,8 +175,9 @@ router.get('/reports/ranks', adminAuth, async (req, res) => {
         'Father Name': r.user.fatherName || '—',
         'Class': r.user.className,
         'School Name': r.user.schoolName || '—',
+        'Mobile Number': r.user.mobileNumber || '—',
         'Email': r.user.email,
-        'Language': r.user.language === 'hindi' ? 'हिंदी' : 'English',
+        'Language': r.user.language === 'hindi' ? 'Hindi' : 'English',
         'Chapter': r.chapter || chapter,
         'Subject': r.subject || '—',
         'Best Score': r.bestScore,
@@ -205,14 +187,13 @@ router.get('/reports/ranks', adminAuth, async (req, res) => {
         'Attempts': r.attempts
       }));
     } else {
-      // Overall ranking
       const query = { role: 'student' };
       if (className) query.className = className;
       if (schoolName) query.schoolName = schoolName;
 
       const users = await User.find(query)
         .sort({ totalScore: -1 })
-        .select('name fatherName className schoolName email language totalScore totalTests');
+        .select('name fatherName className schoolName mobileNumber email language totalScore totalTests');
 
       data = users.map((u, i) => ({
         'Rank': i + 1,
@@ -220,19 +201,19 @@ router.get('/reports/ranks', adminAuth, async (req, res) => {
         'Father Name': u.fatherName || '—',
         'Class': u.className,
         'School Name': u.schoolName || '—',
+        'Mobile Number': u.mobileNumber || '—',
         'Email': u.email,
-        'Language': u.language === 'hindi' ? 'हिंदी' : 'English',
+        'Language': u.language === 'hindi' ? 'Hindi' : 'English',
         'Total Score': u.totalScore || 0,
         'Total Tests': u.totalTests || 0,
         'Avg Score': u.totalTests > 0 ? (u.totalScore / u.totalTests).toFixed(1) : 0,
       }));
     }
 
-    // Column widths
     const colWidths = [
       { wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 8 }, { wch: 30 },
-      { wch: 28 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 12 },
-      { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 10 }
+      { wch: 14 }, { wch: 28 }, { wch: 10 }, { wch: 18 }, { wch: 14 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 10 }
     ];
 
     const wb = XLSX.utils.book_new();
