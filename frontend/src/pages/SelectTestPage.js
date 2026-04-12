@@ -10,6 +10,8 @@ export default function SelectTestPage() {
   const navigate = useNavigate();
   const [meta, setMeta] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [customCount, setCustomCount] = useState('');
+  const [useCustom, setUseCustom] = useState(false);
   const [selected, setSelected] = useState({
     language: user?.language || 'hindi',
     className: user?.className || '',
@@ -32,10 +34,26 @@ export default function SelectTestPage() {
     (!selected.subject || m._id.subject === selected.subject)
   );
 
+  const maxAvailable = chapters.find(c => c._id.chapter === selected.chapter)?.count || 100;
+
+  const handleCustomCount = (val) => {
+    setCustomCount(val);
+    const num = parseInt(val);
+    if (!isNaN(num) && num > 0) {
+      setSelected({ ...selected, questionCount: num });
+    }
+  };
+
   const handleStart = () => {
     if (!selected.className || !selected.chapter) return toast.warning('Please select class and chapter');
     const chapterData = chapters.find(c => c._id.chapter === selected.chapter);
     if (!chapterData || chapterData.count < 5) return toast.warning('Not enough questions in this chapter');
+    if (useCustom) {
+      const num = parseInt(customCount);
+      if (isNaN(num) || num < 1) return toast.warning('Please enter a valid number of questions');
+      if (num > maxAvailable) return toast.warning(`Only ${maxAvailable} questions available in this chapter`);
+      if (num > 100) return toast.warning('Maximum 100 questions allowed per test');
+    }
     navigate('/test', { state: selected });
   };
 
@@ -52,14 +70,12 @@ export default function SelectTestPage() {
             🌐 Select Medium / माध्यम चुनें
           </div>
           <div className="lang-toggle" style={{ width: 'fit-content' }}>
-            <button
-              className={`lang-btn ${selected.language === 'hindi' ? 'active' : ''}`}
-              onClick={() => setSelected({ ...selected, language: 'hindi', subject: '', chapter: '' })}
-            >🇮🇳 हिंदी</button>
-            <button
-              className={`lang-btn ${selected.language === 'english' ? 'active' : ''}`}
-              onClick={() => setSelected({ ...selected, language: 'english', subject: '', chapter: '' })}
-            >🇬🇧 English</button>
+            <button className={`lang-btn ${selected.language === 'hindi' ? 'active' : ''}`}
+              onClick={() => setSelected({ ...selected, language: 'hindi', subject: '', chapter: '' })}>
+              🇮🇳 हिंदी</button>
+            <button className={`lang-btn ${selected.language === 'english' ? 'active' : ''}`}
+              onClick={() => setSelected({ ...selected, language: 'english', subject: '', chapter: '' })}>
+              🇬🇧 English</button>
           </div>
         </div>
 
@@ -88,7 +104,7 @@ export default function SelectTestPage() {
           )}
         </div>
 
-        {/* Subject — always show when class is selected */}
+        {/* Subject */}
         {selected.className && (
           <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
             <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px' }}>
@@ -98,34 +114,30 @@ export default function SelectTestPage() {
               <div style={{ color: 'var(--text-muted)' }}>No subjects found for this class</div>
             ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                <button
-                  onClick={() => setSelected({ ...selected, subject: '', chapter: '' })}
+                <button onClick={() => setSelected({ ...selected, subject: '', chapter: '' })}
                   style={{
                     padding: '10px 20px', borderRadius: '8px', border: '2px solid',
                     borderColor: selected.subject === '' ? 'var(--deep-blue)' : 'var(--border)',
                     background: selected.subject === '' ? 'var(--deep-blue)' : 'white',
                     color: selected.subject === '' ? 'white' : 'var(--text)',
                     fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
-                  }}
-                >📋 All Subjects</button>
+                  }}>📋 All Subjects</button>
                 {subjects.map(s => (
-                  <button key={s}
-                    onClick={() => setSelected({ ...selected, subject: s, chapter: '' })}
+                  <button key={s} onClick={() => setSelected({ ...selected, subject: s, chapter: '' })}
                     style={{
                       padding: '10px 20px', borderRadius: '8px', border: '2px solid',
                       borderColor: selected.subject === s ? 'var(--deep-blue)' : 'var(--border)',
                       background: selected.subject === s ? 'var(--deep-blue)' : 'white',
                       color: selected.subject === s ? 'white' : 'var(--text)',
                       fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
-                    }}
-                  >{s}</button>
+                    }}>{s}</button>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Ad between subject and chapter */}
+        {/* Ad */}
         {selected.className && <AdBanner slot="select-test-mid" />}
 
         {/* Chapter */}
@@ -167,31 +179,95 @@ export default function SelectTestPage() {
           </div>
         )}
 
-        {/* Question count */}
+        {/* Question Count */}
         {selected.chapter && (
           <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
-            <div style={{ fontWeight: '700', color: 'var(--navy)', marginBottom: '12px' }}>
-              🔢 Number of Questions
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ fontWeight: '700', color: 'var(--navy)' }}>🔢 Number of Questions</div>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Available: <strong style={{ color: 'var(--navy)' }}>{maxAvailable}</strong> Qs
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+
+            {/* Preset buttons */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
               {[10, 20, 30, 50].map(n => (
                 <button key={n}
-                  onClick={() => setSelected({ ...selected, questionCount: n })}
+                  onClick={() => {
+                    setUseCustom(false);
+                    setCustomCount('');
+                    setSelected({ ...selected, questionCount: n });
+                  }}
+                  disabled={n > maxAvailable}
                   style={{
                     padding: '10px 24px', borderRadius: '8px', border: '2px solid',
-                    borderColor: selected.questionCount === n ? 'var(--gold)' : 'var(--border)',
-                    background: selected.questionCount === n ? 'var(--gold)' : 'white',
-                    color: selected.questionCount === n ? 'white' : 'var(--text)',
-                    fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
+                    borderColor: !useCustom && selected.questionCount === n ? 'var(--gold)' : 'var(--border)',
+                    background: !useCustom && selected.questionCount === n ? 'var(--gold)' : 'white',
+                    color: !useCustom && selected.questionCount === n ? 'white' : 'var(--text)',
+                    fontWeight: '600', cursor: n > maxAvailable ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Poppins, sans-serif',
+                    opacity: n > maxAvailable ? 0.4 : 1
                   }}
                 >{n}</button>
               ))}
+
+              {/* Custom button */}
+              <button
+                onClick={() => { setUseCustom(true); setCustomCount(''); }}
+                style={{
+                  padding: '10px 20px', borderRadius: '8px', border: '2px solid',
+                  borderColor: useCustom ? 'var(--deep-blue)' : 'var(--border)',
+                  background: useCustom ? 'var(--deep-blue)' : 'white',
+                  color: useCustom ? 'white' : 'var(--text)',
+                  fontWeight: '600', cursor: 'pointer', fontFamily: 'Poppins, sans-serif'
+                }}
+              >✏️ Custom</button>
+            </div>
+
+            {/* Custom number input */}
+            {useCustom && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder={`Enter 1 – ${Math.min(maxAvailable, 100)}`}
+                  value={customCount}
+                  min={1}
+                  max={Math.min(maxAvailable, 100)}
+                  onChange={e => handleCustomCount(e.target.value)}
+                  style={{ maxWidth: '200px', fontWeight: 600 }}
+                  autoFocus
+                />
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Max: <strong>{Math.min(maxAvailable, 100)}</strong>
+                </span>
+              </div>
+            )}
+
+            {/* Summary */}
+            <div style={{
+              marginTop: '14px', padding: '10px 14px',
+              background: 'rgba(26,35,126,0.05)', borderRadius: '8px',
+              display: 'flex', gap: '20px', flexWrap: 'wrap'
+            }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                ✅ Questions: <strong style={{ color: 'var(--navy)', fontSize: '15px' }}>
+                  {useCustom ? (customCount || '—') : selected.questionCount}
+                </strong>
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                ⏱ Est. time: <strong style={{ color: 'var(--navy)' }}>
+                  {Math.min((useCustom ? parseInt(customCount) || 0 : selected.questionCount) * 2, 60)} min
+                </strong>
+              </span>
             </div>
           </div>
         )}
 
         {selected.chapter && (
-          <button className="btn btn-primary btn-full" style={{ fontSize: '1.1rem', padding: '16px' }} onClick={handleStart}>
+          <button className="btn btn-primary btn-full"
+            style={{ fontSize: '1.1rem', padding: '16px' }}
+            onClick={handleStart}>
             🚀 Start Test Now
           </button>
         )}
